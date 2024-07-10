@@ -3,7 +3,7 @@
 <table class="table table-striped">
   <thead>
     <tr class="text-end">
-      <th class="text-start">Symbol</th>
+      <th colspan="2" class="text-start">Symbol</th>
       <th>Shares</th>
       <th>Price</th>
       <th>TOTAL</th>
@@ -13,6 +13,22 @@
     {% for stock in stocks %}
     <tr class="text-end">
       <td class="text-start">{{ stock.symbol }}</td>
+      <td class="d-flex gap-2">
+        <form action="/buy" method="post">
+          <input type="hidden" name="symbol" value="{{ stock.symbol }}" />
+          <input type="hidden" name="shares" value="1" />
+          <button class="py-0 px-2 btn btn-secondary" type="submit">
+            Buy x1
+          </button>
+        </form>
+        <form action="/sell" method="post">
+          <input type="hidden" name="symbol" value="{{ stock.symbol }}" />
+          <input type="hidden" name="shares" value="1" />
+          <button class="py-0 px-2 btn btn-secondary" type="submit">
+            Sell x1
+          </button>
+        </form>
+      </td>
       <td>{{ stock.shares }}</td>
       <td>{{ stock.price }}</td>
       <td>{{ stock.total }}</td>
