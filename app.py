@@ -1,3 +1,4 @@
+import json
 import os
 
 from cs50 import SQL
@@ -35,6 +36,23 @@ def after_request(response):
 @login_required
 def index():
     """Show portfolio of stocks"""
+
+    transactions = db.execute(
+        """
+        SELECT symbol, SUM(shares) AS shares FROM transactions
+        WHERE user_id = ?
+        GROUP BY symbol;
+        """,
+        session["user_id"],
+    )
+
+    for transaction in transactions:
+        if transaction["shares"] == 0:
+            db.execute(
+                "DELETE FROM transactions WHERE user_id = ? AND symbol = ?;",
+                session["user_id"],
+                transaction["symbol"],
+            )
 
     user_records = db.execute(
         """
@@ -112,6 +130,7 @@ def buy():
         user_balance = db.execute(
             "SELECT cash FROM users WHERE id = ?;", session["user_id"]
         )[0]["cash"]
+        flash("Bought!")
         return redirect("/")
 
     return render_template("buy.html")
@@ -209,6 +228,7 @@ def register():
                 username,
                 generate_password_hash(password),
             )
+            flash("Registered!")
             return redirect("/login")
         except ValueError:
             return apology("Username already exists", 400)
@@ -220,4 +240,47 @@ def register():
 @login_required
 def sell():
     """Sell shares of stock"""
-    return apology("TODO")
+    transactions = db.execute(
+        """
+        SELECT symbol, SUM(shares) AS shares FROM transactions
+        WHERE user_id = ?
+        GROUP BY symbol;
+        """,
+        session["user_id"],
+    )
+    symbols = [transaction["symbol"] for transaction in transactions]
+    if request.method == "POST":
+        symbol = request.form.get("symbol")
+        shares = request.form.get("shares")
+        if not symbol or not shares:
+            return apology("Symbol and shares are required")
+        if symbol not in symbols:
+            return apology("Symbol not found")
+        try:
+            shares = int(shares)
+        except ValueError:
+            return apology("Shares must be a positive integer")
+        if shares < 1:
+            return apology("Shares must be a positive integer")
+
+        for transaction in transactions:
+            if symbol == transaction["symbol"] and shares > transaction["shares"]:
+                return apology("Not enough shares")
+
+        data = lookup(symbol)
+        db.execute(
+            "UPDATE users SET cash = cash + ? WHERE id = ?;",
+            data["price"] * shares,
+            session["user_id"],
+        )
+        db.execute(
+            "INSERT INTO transactions (user_id, symbol, price, shares) VALUES (?, ?, ?, ?);",
+            session["user_id"],
+            symbol,
+            data["price"],
+            -shares,
+        )
+        flash("Sold!")
+        return redirect("/")
+
+    return render_template("sell.html", symbols=symbols)
