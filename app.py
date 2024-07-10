@@ -82,7 +82,10 @@ def buy():
         shares = request.form.get("shares")
         if not symbol or not shares:
             return apology("Symbol and shares are required")
-        shares = int(shares)
+        try:
+            shares = int(shares)
+        except:
+            return apology("Share must be a positive integer")
         if shares < 1:
             return apology("Shares must be a positive integer")
         data = lookup(symbol)
@@ -132,6 +135,7 @@ def history():
         transaction["time"] = (
             f"{t.tm_year}-{t.tm_mon}-{t.tm_mday} {t.tm_hour}:{t.tm_min}:{t.tm_sec}"
         )
+        transaction["price"] = usd(transaction["price"])
     return render_template("history.html", transactions=transactions)
 
 
@@ -194,6 +198,8 @@ def quote():
         if not symbol:
             return apology("No symbol provided")
         data = lookup(symbol)
+        if not data:
+            return apology("Symbol not found")
         price = usd(data["price"])
         return render_template("quoted.html", symbol=symbol, price=price)
     return render_template("quote.html")
