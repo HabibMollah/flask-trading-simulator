@@ -246,7 +246,11 @@ def sell():
         """,
         session["user_id"],
     )
-    symbols = [transaction["symbol"] for transaction in transactions]
+    symbols = [
+        transaction["symbol"]
+        for transaction in transactions
+        if transaction["shares"] > 0
+    ]
     if request.method == "POST":
         symbol = request.form.get("symbol")
         shares = request.form.get("shares")
