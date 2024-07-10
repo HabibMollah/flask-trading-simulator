@@ -59,14 +59,15 @@ def index():
     for record in user_records:
         current_price = lookup(record["symbol"])["price"]
         total += current_price * record["shares"]
-        stocks.append(
-            {
-                "symbol": record["symbol"],
-                "shares": record["shares"],
-                "price": usd(current_price),
-                "total": usd(current_price * record["shares"]),
-            }
-        )
+        if record["shares"] > 0:
+            stocks.append(
+                {
+                    "symbol": record["symbol"],
+                    "shares": record["shares"],
+                    "price": usd(current_price),
+                    "total": usd(current_price * record["shares"]),
+                }
+            )
     return render_template(
         "index.html", stocks=stocks, cash=usd(cash), total=usd(total + cash)
     )
