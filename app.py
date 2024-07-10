@@ -1,5 +1,4 @@
-import json
-import os
+import time
 
 from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session
@@ -36,23 +35,6 @@ def after_request(response):
 @login_required
 def index():
     """Show portfolio of stocks"""
-
-    transactions = db.execute(
-        """
-        SELECT symbol, SUM(shares) AS shares FROM transactions
-        WHERE user_id = ?
-        GROUP BY symbol;
-        """,
-        session["user_id"],
-    )
-
-    for transaction in transactions:
-        if transaction["shares"] == 0:
-            db.execute(
-                "DELETE FROM transactions WHERE user_id = ? AND symbol = ?;",
-                session["user_id"],
-                transaction["symbol"],
-            )
 
     user_records = db.execute(
         """
@@ -140,7 +122,16 @@ def buy():
 @login_required
 def history():
     """Show history of transactions"""
-    return apology("TODO")
+    transactions = db.execute(
+        "SELECT symbol, price, shares, created_at AS time FROM transactions WHERE user_id = ? ORDER BY created_at DESC;",
+        session["user_id"],
+    )
+    for transaction in transactions:
+        t = time.localtime(transaction["time"])
+        transaction["time"] = (
+            f"{t.tm_year}-{t.tm_mon}-{t.tm_mday} {t.tm_hour}:{t.tm_min}:{t.tm_sec}"
+        )
+    return render_template("history.html", transactions=transactions)
 
 
 @app.route("/login", methods=["GET", "POST"])
